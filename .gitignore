@@ -1,6 +1,6 @@
 # Cloned upstream repos (not committed — cloned at build time)
-libqi/
-libqi-python/
+/libqi/
+/libqi-python/
 
 # Build artifacts
 build/
