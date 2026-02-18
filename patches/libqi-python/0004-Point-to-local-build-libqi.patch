@@ -1,0 +1,30 @@
+From 3ad7f15ad178bb05524a7eede9a107ce67711fe9 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:32:35 +0100
+Subject: [PATCH 4/7] Point to local build libqi
+
+---
+ CMakeLists.txt | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c4dd4a0..e2aa7d6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -89,8 +89,12 @@ find_package(
+ find_package(pybind11 REQUIRED)
+ 
+ ##############################################################################
+-# Find LibQi
++# Find LibQi (local build in ../libqi/build)
+ ##############################################################################
++set(QI_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build")
++if(EXISTS "${QI_LOCAL_PATH}/cmake/qimodule-config.cmake")
++  list(PREPEND CMAKE_PREFIX_PATH "${QI_LOCAL_PATH}")
++endif()
+ find_package(qi REQUIRED)
+ 
+ ##############################################################################
+-- 
+2.38.1.windows.1
+

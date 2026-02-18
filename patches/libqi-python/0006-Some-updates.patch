@@ -1,0 +1,230 @@
+From 7e4477634a713694a5009e4d0db65545e10b7a1a Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 11:24:21 +0100
+Subject: [PATCH 6/7] Some updates
+
+---
+ CMakeLists.txt      |  20 ++++----
+ conanfile.py        |   1 +
+ install_local.py    | 111 ++++++++++++++++++++++++++++++++++++++++++++
+ qipython/common.hpp |   7 ++-
+ src/pytypes.cpp     |   2 +-
+ 5 files changed, 129 insertions(+), 12 deletions(-)
+ create mode 100644 install_local.py
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e2aa7d6..55920cc 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -78,10 +78,7 @@ find_package(
+ ##############################################################################
+ # Find Boost
+ ##############################################################################
+-find_package(
+-  Boost REQUIRED
+-  COMPONENTS thread
+-)
++## Boost is provided by Conan; do not use find_package(Boost ...) with CMake >= 4.2
+ 
+ ##############################################################################
+ # Find Pybind11
+@@ -89,11 +86,11 @@ find_package(
+ find_package(pybind11 REQUIRED)
+ 
+ ##############################################################################
+-# Find LibQi (local build in ../libqi/build)
++# Find LibQi (local build in ../libqi/build/release)
+ ##############################################################################
+-set(QI_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build")
+-if(EXISTS "${QI_LOCAL_PATH}/cmake/qimodule-config.cmake")
+-  list(PREPEND CMAKE_PREFIX_PATH "${QI_LOCAL_PATH}")
++set(QI_LOCAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build/release")
++if(NOT qi_DIR AND EXISTS "${QI_LOCAL_DIR}/qi-config.cmake")
++  set(qi_DIR "${QI_LOCAL_DIR}")
+ endif()
+ find_package(qi REQUIRED)
+ 
+@@ -102,7 +99,7 @@ find_package(qi REQUIRED)
+ ##############################################################################
+ add_library(cxx_standard INTERFACE)
+ 
+-# The project requires at least C++17.
++# The project requires at least C++17.s
+ target_compile_features(
+   cxx_standard
+   INTERFACE
+@@ -290,6 +287,11 @@ install(
+   COMPONENT Module
+ )
+ 
++# Copy Python files to the build directory so the module is usable from there.
++foreach(file IN LISTS qi_python_py_files)
++  configure_file("${file}" "${file}" COPYONLY)
++endforeach()
++
+ ##############################################################################
+ # Tests
+ ##############################################################################
+diff --git a/conanfile.py b/conanfile.py
+index 5841722..8fb901c 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -56,6 +56,7 @@ USED_BOOST_COMPONENTS = [
+ class QiPythonConan(ConanFile):
+     requires = [
+         "boost/[~1.83]",
++        "openssl/[~3]",
+         "pybind11/[^2.11]",
+         # "qi/[~4]",  # Use local libqi instead of Conan package
+     ]
+diff --git a/install_local.py b/install_local.py
+new file mode 100644
+index 0000000..eec2202
+--- /dev/null
++++ b/install_local.py
+@@ -0,0 +1,111 @@
++"""
++Script to install the pre-built qi package into the active Python environment
++for local development and testing.
++
++Usage:
++    python install_local.py
++
++This copies the built qi_python.pyd, Python files, and required DLLs into
++the active environment's site-packages/qi directory.
++
++DLL paths are read from Conan's generated toolchain file (CONAN_RUNTIME_LIB_DIRS).
++"""
++
++import os
++import re
++import sys
++import shutil
++import sysconfig
++
++
++def find_conan_runtime_lib_dirs(toolchain_path):
++    """Parse CONAN_RUNTIME_LIB_DIRS from the Conan toolchain cmake file."""
++    with open(toolchain_path, "r") as f:
++        content = f.read()
++    match = re.search(
++        r'set\(CONAN_RUNTIME_LIB_DIRS\s+"([^)]+)"\s*\)', content
++    )
++    if not match:
++        return []
++    raw = match.group(1)
++    # Split on '" "' pattern
++    dirs = [d.strip().strip('"') for d in raw.split('" "')]
++    return dirs
++
++
++def main():
++    project_dir = os.path.dirname(os.path.abspath(__file__))
++    build_dir = os.path.join(project_dir, "build", "release")
++    qi_source_dir = os.path.join(project_dir, "qi")
++    qi_build_dir = os.path.join(build_dir, "qi")
++    toolchain_file = os.path.join(build_dir, "generators", "conan_toolchain.cmake")
++
++    site_packages = sysconfig.get_path("purelib")
++    qi_install_dir = os.path.join(site_packages, "qi")
++
++    print(f"Installing qi to: {qi_install_dir}")
++    os.makedirs(qi_install_dir, exist_ok=True)
++
++    # 1. Copy Python source files
++    py_files = [
++        "__init__.py", "logging.py", "path.py", "translator.py",
++        "_binder.py", "_type.py",
++    ]
++    for f in py_files:
++        src = os.path.join(qi_source_dir, f)
++        if os.path.exists(src):
++            shutil.copy2(src, qi_install_dir)
++            print(f"  Copied {f}")
++
++    # 2. Copy generated Python files
++    for f in ["_version.py", "native.py"]:
++        src = os.path.join(qi_build_dir, f)
++        if os.path.exists(src):
++            shutil.copy2(src, qi_install_dir)
++            print(f"  Copied {f} (generated)")
++
++    # 3. Copy the .pyd file
++    pyd_src = os.path.join(qi_build_dir, "qi_python.pyd")
++    if os.path.exists(pyd_src):
++        shutil.copy2(pyd_src, qi_install_dir)
++        print(f"  Copied qi_python.pyd")
++    else:
++        print(f"  WARNING: qi_python.pyd not found at {pyd_src}")
++        sys.exit(1)
++
++    # 4. Collect all DLL directories
++    dll_dirs = []
++
++    # libqi build output
++    libqi_bin = os.path.join(project_dir, "..", "libqi", "build", "release", "sdk", "bin")
++    if os.path.isdir(libqi_bin):
++        dll_dirs.append(libqi_bin)
++
++    # libqi-python build output
++    local_sdk_bin = os.path.join(build_dir, "sdk", "bin")
++    if os.path.isdir(local_sdk_bin):
++        dll_dirs.append(local_sdk_bin)
++
++    # Conan runtime lib dirs (Boost, OpenSSL, etc.)
++    if os.path.isfile(toolchain_file):
++        conan_dirs = find_conan_runtime_lib_dirs(toolchain_file)
++        for d in conan_dirs:
++            resolved = os.path.normpath(d) if os.path.isabs(d) else os.path.normpath(os.path.join(build_dir, d))
++            if os.path.isdir(resolved):
++                dll_dirs.append(resolved)
++
++    # 5. Copy all DLLs
++    copied_dlls = set()
++    for dll_dir in dll_dirs:
++        for f in os.listdir(dll_dir):
++            if f.lower().endswith(".dll") and f not in copied_dlls:
++                shutil.copy2(os.path.join(dll_dir, f), qi_install_dir)
++                print(f"  Copied DLL: {f}")
++                copied_dlls.add(f)
++
++    print(f"\nInstalled {len(py_files) + 2} Python files, 1 .pyd, and {len(copied_dlls)} DLLs.")
++    print(f'Test with: python -c "import qi; print(\'OK\')"')
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/qipython/common.hpp b/qipython/common.hpp
+index 3335f66..3edf3a9 100644
+--- a/qipython/common.hpp
++++ b/qipython/common.hpp
+@@ -116,8 +116,11 @@ boost::optional<T> extractKeywordArg(pybind11::dict kwargs,
+ /// finalizing or not.
+ inline boost::optional<bool> interpreterIsFinalizing()
+ {
+-// `_Py_IsFinalizing` is only available on CPython 3.7+
+-#if PY_VERSION_HEX >= 0x03070000
++// `Py_IsFinalizing` is the public API (available since 3.13).
++// `_Py_IsFinalizing` was the private API (available in CPython 3.7 to 3.12).
++#if PY_VERSION_HEX >= 0x030D0000
++  return boost::make_optional(Py_IsFinalizing() != 0);
++#elif PY_VERSION_HEX >= 0x03070000
+   return boost::make_optional(_Py_IsFinalizing() != 0);
+ #else
+   // There is no way of knowing on older versions.
+diff --git a/src/pytypes.cpp b/src/pytypes.cpp
+index 41795d3..4b18a8f 100644
+--- a/src/pytypes.cpp
++++ b/src/pytypes.cpp
+@@ -91,7 +91,7 @@ struct ValueToPyObject
+     // try to create a Python `bytes` instead.
+     const auto toUnicode = [&] {
+       const auto obj = ::py::reinterpret_steal<::py::str>(
+-        PyUnicode_FromStringAndSize(data, static_cast<ssize_t>(len)));
++        PyUnicode_FromStringAndSize(data, static_cast<Py_ssize_t>(len)));
+       // When it fails, the conversion may set a Python error. We need to handle
+       // it by throwing `error_already_set`.
+       if (!obj)
+-- 
+2.38.1.windows.1
+

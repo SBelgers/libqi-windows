@@ -1,0 +1,35 @@
+From f438a83d398f1c4a6c2fe47fda6e53bb6ca2298b Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:27:32 +0100
+Subject: [PATCH 3/7] Another attempt at circumventing.
+
+---
+ conanfile.py | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index 3b57bb7..c5c0d0b 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -73,7 +73,7 @@ class QiPythonConan(ConanFile):
+         "boost/*:shared": True,
+         "openssl/*:shared": True,
+         "qi/*:with_boost_locale": True,  # for `pytranslator.cpp`
+-        "compiler.libcxx": "libstdc++11",
++        # "compiler.libcxx" will be set in configure() for non-MSVC compilers
+     }
+ 
+     # Disable every components of Boost unless we actively use them.
+@@ -89,8 +89,7 @@ class QiPythonConan(ConanFile):
+     def configure(self):
+         # Only set GNU-specific options if not using MSVC
+         if self.settings.get_safe("compiler") not in ["Visual Studio", "msvc"]:
+-            # Example: set GNU-specific options here if needed
+-            pass
++            self.options["compiler.libcxx"] = "libstdc++11"
+ 
+     def layout(self):
+         # Configure the format of the build folder name, based on the value of some variables.
+-- 
+2.38.1.windows.1
+

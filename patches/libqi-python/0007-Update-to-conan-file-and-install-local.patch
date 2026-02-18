@@ -1,0 +1,61 @@
+From ebb0b8da912043c6577fccb47ae71688b0e20cbe Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 11:37:00 +0100
+Subject: [PATCH 7/7] Update to conan file and install local
+
+---
+ conanfile.py     |  2 +-
+ install_local.py | 14 ++++++++++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index 8fb901c..a5f0baa 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -55,7 +55,7 @@ USED_BOOST_COMPONENTS = [
+ 
+ class QiPythonConan(ConanFile):
+     requires = [
+-        "boost/[~1.83]",
++        "boost/[~1.82]",
+         "openssl/[~3]",
+         "pybind11/[^2.11]",
+         # "qi/[~4]",  # Use local libqi instead of Conan package
+diff --git a/install_local.py b/install_local.py
+index eec2202..63f4cfd 100644
+--- a/install_local.py
++++ b/install_local.py
+@@ -38,7 +38,18 @@ def main():
+     build_dir = os.path.join(project_dir, "build", "release")
+     qi_source_dir = os.path.join(project_dir, "qi")
+     qi_build_dir = os.path.join(build_dir, "qi")
++
++    # Handle double-nested build directory (cmake preset quirk)
++    qi_build_dir_nested = os.path.join(build_dir, "build", "release", "qi")
++    if not os.path.exists(os.path.join(qi_build_dir, "qi_python.pyd")) and \
++       os.path.exists(os.path.join(qi_build_dir_nested, "qi_python.pyd")):
++        qi_build_dir = qi_build_dir_nested
++        print(f"  Using nested build dir: {qi_build_dir}")
++
++    # Find generators dir (may also be nested)
+     toolchain_file = os.path.join(build_dir, "generators", "conan_toolchain.cmake")
++    if not os.path.isfile(toolchain_file):
++        toolchain_file = os.path.join(build_dir, "build", "release", "generators", "conan_toolchain.cmake")
+ 
+     site_packages = sysconfig.get_path("purelib")
+     qi_install_dir = os.path.join(site_packages, "qi")
+@@ -83,8 +94,11 @@ def main():
+ 
+     # libqi-python build output
+     local_sdk_bin = os.path.join(build_dir, "sdk", "bin")
++    local_sdk_bin_nested = os.path.join(build_dir, "build", "release", "sdk", "bin")
+     if os.path.isdir(local_sdk_bin):
+         dll_dirs.append(local_sdk_bin)
++    if os.path.isdir(local_sdk_bin_nested):
++        dll_dirs.append(local_sdk_bin_nested)
+ 
+     # Conan runtime lib dirs (Boost, OpenSSL, etc.)
+     if os.path.isfile(toolchain_file):
+-- 
+2.38.1.windows.1
+

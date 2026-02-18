@@ -1,0 +1,25 @@
+From a1fcafec6db81e07365c4bb06ef3dbf3320a4776 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:32:57 +0100
+Subject: [PATCH 5/7] Remove the qi requirement
+
+---
+ conanfile.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index c5c0d0b..5841722 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -57,7 +57,7 @@ class QiPythonConan(ConanFile):
+     requires = [
+         "boost/[~1.83]",
+         "pybind11/[^2.11]",
+-        "qi/[~4]",
++        # "qi/[~4]",  # Use local libqi instead of Conan package
+     ]
+ 
+     test_requires = [
+-- 
+2.38.1.windows.1
+

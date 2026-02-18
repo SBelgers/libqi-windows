@@ -1,0 +1,29 @@
+From 8145b226a8629f42324327882b41599012af37d5 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:26:43 +0100
+Subject: [PATCH 2/7] More gnu requirement circumventing
+
+---
+ conanfile.py | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/conanfile.py b/conanfile.py
+index fe8d6d1..3b57bb7 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -85,6 +85,12 @@ class QiPythonConan(ConanFile):
+             for _name in BOOST_COMPONENTS
+         }
+     )
++    
++    def configure(self):
++        # Only set GNU-specific options if not using MSVC
++        if self.settings.get_safe("compiler") not in ["Visual Studio", "msvc"]:
++            # Example: set GNU-specific options here if needed
++            pass
+ 
+     def layout(self):
+         # Configure the format of the build folder name, based on the value of some variables.
+-- 
+2.38.1.windows.1
+
