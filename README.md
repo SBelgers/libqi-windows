@@ -74,41 +74,57 @@ os=Windows
 
 ### Build steps
 
-1. **Create and activate a virtualenv:**
-
-   ```
-   python -m venv c:\venvs\libqi-windows
-   c:\venvs\libqi-windows\Scripts\activate
-   pip install conan ninja
-   ```
-
-2. **Clone this repo:**
+1. **Clone this repo:**
 
    ```
    git clone https://github.com/SBelgers/libqi-windows.git
    cd libqi-windows
    ```
 
-3. **Run the build script** from a *Developer PowerShell for VS 2022*:
+2. **Set up Conan and Ninja** (if not already installed):
 
-   ```powershell
-   .\build_all.ps1
+   ```
+   pip install conan ninja
+   ```
+
+3. **Run the build script** from a *Developer Command Prompt for VS 2022*:
+
+   ```
+   build_all.cmd -pythonversion 3.14 -buildwheel
    ```
 
    This will:
-   - Clone `libqi` (v4.0.1) and `libqi-python` (v3.1.5) into the parent dir
+   - Auto-create a venv in `venvs/314/`
+   - Clone `libqi` (v4.0.1) and `libqi-python` (v3.1.5) into the repo
    - Apply the MSVC patches from `patches/`
    - Build both with Conan + CMake
-   - Install the `qi` package into your active venv
+   - Install the `qi` package into the venv
    - Run a smoke test (`import qi`)
+   - Build a `.whl` file in `dist/`
 
-4. **Build a wheel** (optional, for distribution):
+   Or if you already have an active venv, just run `build_all.cmd` without
+   `-pythonversion`.
+
+   **Script parameters:**
+
+   | Parameter | Description |
+   |-----------|-------------|
+   | `-pythonversion 3.13` | Python version to build for (uses `py` launcher) |
+   | `-pythonvenv <path>` | Custom venv path (auto-created if `-pythonversion` is set) |
+   | `-skiplibqi` | Skip rebuilding libqi (it's Python-independent) |
+   | `-buildwheel` | Also produce a `.whl` file in `dist/` |
+
+4. **Build for multiple Python versions:**
 
    ```
-   python build_wheel.py
-   ```
+   rem First build (builds libqi + libqi-python for 3.14)
+   build_all.cmd -pythonversion 3.14 -buildwheel
 
-   The `.whl` file will be written to `dist/`.
+   rem Additional versions (skip libqi -- it's Python-independent)
+   build_all.cmd -pythonversion 3.13 -skiplibqi -buildwheel
+   build_all.cmd -pythonversion 3.12 -skiplibqi -buildwheel
+   build_all.cmd -pythonversion 3.11 -skiplibqi -buildwheel
+   ```
 
 5. **Upload to PyPI** (optional):
 
@@ -128,7 +144,7 @@ cd ..
 
 git clone --depth 1 --branch qi-framework-v4.0.1 https://github.com/aldebaran/libqi.git
 cd libqi
-for %f in (..\libqi-windows\patches\libqi\*.patch) do git am "%f"
+for %f in (..\patches\libqi\*.patch) do git am "%f"
 conan install . -s build_type=Release --build=missing
 cmake --preset conan-release
 cmake --build --preset conan-release
@@ -136,7 +152,7 @@ cd ..
 
 git clone --depth 1 --branch qi-python-v3.1.5 https://github.com/aldebaran/libqi-python.git
 cd libqi-python
-for %f in (..\libqi-windows\patches\libqi-python\*.patch) do git am "%f"
+for %f in (..\patches\libqi-python\*.patch) do git am "%f"
 conan install . -s build_type=Release --build=missing
 cmake --preset conan-release
 cmake --build --preset conan-release

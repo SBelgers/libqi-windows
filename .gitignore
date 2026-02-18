@@ -5,6 +5,7 @@
 # Build artifacts
 build/
 dist/
+venvs/
 *.egg-info/
 
 # DLLs and binaries (shipped in wheel, not in repo)
