@@ -1,31 +1,19 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From f98494d3f29aeb53f547f0ad888ba1825bf526a1 Mon Sep 17 00:00:00 2001
 From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
-Date: Wed, 18 Feb 2026 11:37:00 +0100
+Date: Wed, 18 Feb 2026 15:58:18 +0100
 Subject: [PATCH 4/4] Add install_local.py helper script
 
-Script to install the pre-built qi Python package into the active
-environment's site-packages for local development and testing.
-
-It copies:
-  - Python source files from qi/
-  - Generated files (_version.py, native.py) and qi_python.pyd from
-    the build output directory
-  - All required DLLs (libqi, Boost, OpenSSL) discovered from the
-    libqi build output and Conan's CONAN_RUNTIME_LIB_DIRS
-
-Handles the double-nested build directory layout that can occur with
-CMake presets (build/release/build/release/).
 ---
- install_local.py | 126 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+ install_local.py | 138 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
  create mode 100644 install_local.py
 
 diff --git a/install_local.py b/install_local.py
 new file mode 100644
-index 0000000..63f4cfd
+index 0000000..a5db02f
 --- /dev/null
 +++ b/install_local.py
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,138 @@
 +"""
 +Script to install the pre-built qi package into the active Python environment
 +for local development and testing.
@@ -50,9 +38,7 @@ index 0000000..63f4cfd
 +    """Parse CONAN_RUNTIME_LIB_DIRS from the Conan toolchain cmake file."""
 +    with open(toolchain_path, "r") as f:
 +        content = f.read()
-+    match = re.search(
-+        r'set\(CONAN_RUNTIME_LIB_DIRS\s+"([^)]+)"\s*\)', content
-+    )
++    match = re.search(r'set\(CONAN_RUNTIME_LIB_DIRS\s+"([^)]+)"\s*\)', content)
 +    if not match:
 +        return []
 +    raw = match.group(1)
@@ -69,15 +55,18 @@ index 0000000..63f4cfd
 +
 +    # Handle double-nested build directory (cmake preset quirk)
 +    qi_build_dir_nested = os.path.join(build_dir, "build", "release", "qi")
-+    if not os.path.exists(os.path.join(qi_build_dir, "qi_python.pyd")) and \
-+       os.path.exists(os.path.join(qi_build_dir_nested, "qi_python.pyd")):
++    if not os.path.exists(
++        os.path.join(qi_build_dir, "qi_python.pyd")
++    ) and os.path.exists(os.path.join(qi_build_dir_nested, "qi_python.pyd")):
 +        qi_build_dir = qi_build_dir_nested
 +        print(f"  Using nested build dir: {qi_build_dir}")
 +
 +    # Find generators dir (may also be nested)
 +    toolchain_file = os.path.join(build_dir, "generators", "conan_toolchain.cmake")
 +    if not os.path.isfile(toolchain_file):
-+        toolchain_file = os.path.join(build_dir, "build", "release", "generators", "conan_toolchain.cmake")
++        toolchain_file = os.path.join(
++            build_dir, "build", "release", "generators", "conan_toolchain.cmake"
++        )
 +
 +    site_packages = sysconfig.get_path("purelib")
 +    qi_install_dir = os.path.join(site_packages, "qi")
@@ -87,8 +76,12 @@ index 0000000..63f4cfd
 +
 +    # 1. Copy Python source files
 +    py_files = [
-+        "__init__.py", "logging.py", "path.py", "translator.py",
-+        "_binder.py", "_type.py",
++        "__init__.py",
++        "logging.py",
++        "path.py",
++        "translator.py",
++        "_binder.py",
++        "_type.py",
 +    ]
 +    for f in py_files:
 +        src = os.path.join(qi_source_dir, f)
@@ -116,7 +109,9 @@ index 0000000..63f4cfd
 +    dll_dirs = []
 +
 +    # libqi build output
-+    libqi_bin = os.path.join(project_dir, "..", "libqi", "build", "release", "sdk", "bin")
++    libqi_bin = os.path.join(
++        project_dir, "..", "libqi", "build", "release", "sdk", "bin"
++    )
 +    if os.path.isdir(libqi_bin):
 +        dll_dirs.append(libqi_bin)
 +
@@ -132,7 +127,11 @@ index 0000000..63f4cfd
 +    if os.path.isfile(toolchain_file):
 +        conan_dirs = find_conan_runtime_lib_dirs(toolchain_file)
 +        for d in conan_dirs:
-+            resolved = os.path.normpath(d) if os.path.isabs(d) else os.path.normpath(os.path.join(build_dir, d))
++            resolved = (
++                os.path.normpath(d)
++                if os.path.isabs(d)
++                else os.path.normpath(os.path.join(build_dir, d))
++            )
 +            if os.path.isdir(resolved):
 +                dll_dirs.append(resolved)
 +
@@ -145,8 +144,10 @@ index 0000000..63f4cfd
 +                print(f"  Copied DLL: {f}")
 +                copied_dlls.add(f)
 +
-+    print(f"\nInstalled {len(py_files) + 2} Python files, 1 .pyd, and {len(copied_dlls)} DLLs.")
-+    print(f'Test with: python -c "import qi; print(\'OK\')"')
++    print(
++        f"\nInstalled {len(py_files) + 2} Python files, 1 .pyd, and {len(copied_dlls)} DLLs."
++    )
++    print(f"Test with: python -c \"import qi; print('OK')\"")
 +
 +
 +if __name__ == "__main__":

@@ -1,0 +1,39 @@
+From b5dcb2e812ded9b71089f18ee54cad3232fad3b8 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 15:50:01 +0100
+Subject: [PATCH 1/4] conanfile: Windows/MSVC and local libqi support
+
+---
+ conanfile.py | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index d2a74aa..77de67a 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -55,15 +55,20 @@ USED_BOOST_COMPONENTS = [
+ 
+ class QiPythonConan(ConanFile):
+     requires = [
+-        "boost/[~1.83]",
++        "boost/[~1.82]",
+         "pybind11/[^2.11]",
+-        "qi/[~4]",
++        "openssl/[~3]",
++        # "qi/[~4]",
+     ]
+ 
+     test_requires = [
+         "gtest/[~1.14]",
+     ]
+ 
++    def configure(self):
++        # Only set GNU-specific options if not using MSVC
++        if self.settings.get_safe("compiler") not in ["Visual Studio", "msvc"]:
++            self.options["compiler.libcxx"] = "libstdc++11"
+     generators = "CMakeToolchain", "CMakeDeps"
+ 
+     # Binary configuration
+-- 
+2.38.1.windows.1
+

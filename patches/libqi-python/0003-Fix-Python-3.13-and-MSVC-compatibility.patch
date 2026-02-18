@@ -1,22 +1,18 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From b06966763f5d3c2496d852562bf0f00ce57353ad Mon Sep 17 00:00:00 2001
 From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
-Date: Wed, 18 Feb 2026 11:24:21 +0100
+Date: Wed, 18 Feb 2026 15:55:48 +0100
 Subject: [PATCH 3/4] Fix Python 3.13+ and MSVC compatibility
 
-- qipython/common.hpp: Use the public Py_IsFinalizing() API on
-  Python >= 3.13, where the private _Py_IsFinalizing() was removed.
-- src/pytypes.cpp: Use Py_ssize_t instead of ssize_t, which is not
-  defined on MSVC.
 ---
- qipython/common.hpp | 7 +++++--
+ qipython/common.hpp | 9 ++++++---
  src/pytypes.cpp     | 2 +-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/qipython/common.hpp b/qipython/common.hpp
-index 3335f66..3edf3a9 100644
+index 3335f66..bc9604e 100644
 --- a/qipython/common.hpp
 +++ b/qipython/common.hpp
-@@ -116,8 +116,11 @@ boost::optional<T> extractKeywordArg(pybind11::dict kwargs,
+@@ -116,11 +116,14 @@ boost::optional<T> extractKeywordArg(pybind11::dict kwargs,
  /// finalizing or not.
  inline boost::optional<bool> interpreterIsFinalizing()
  {
@@ -29,7 +25,11 @@ index 3335f66..3edf3a9 100644
 +#elif PY_VERSION_HEX >= 0x03070000
    return boost::make_optional(_Py_IsFinalizing() != 0);
  #else
-   // There is no way of knowing on older versions.
+-  // There is no way of knowing on older versions.
++   // There is no way of knowing on older versions.
+   return {};
+ #endif
+ }
 diff --git a/src/pytypes.cpp b/src/pytypes.cpp
 index 41795d3..4b18a8f 100644
 --- a/src/pytypes.cpp
