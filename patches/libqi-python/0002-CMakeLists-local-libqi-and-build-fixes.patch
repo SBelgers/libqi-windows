@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:32:35 +0100
+Subject: [PATCH 2/4] CMakeLists: use local libqi build and fix Boost
+ configuration
+
+- Remove find_package(Boost) — Boost is provided by Conan and the
+  explicit find_package conflicts with CMake >= 4.2 policy changes.
+- Point find_package(qi) at the local libqi build directory
+  (../libqi/build/release) when no qi_DIR is already set.
+- Copy Python source files into the build directory so the module
+  is importable directly from the build tree during development.
+---
+ CMakeLists.txt | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c4dd4a0..55920cc 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -78,10 +78,7 @@ find_package(
+ ##############################################################################
+ # Find Boost
+ ##############################################################################
+-find_package(
+-  Boost REQUIRED
+-  COMPONENTS thread
+-)
++## Boost is provided by Conan; do not use find_package(Boost ...) with CMake >= 4.2
+ 
+ ##############################################################################
+ # Find Pybind11
+@@ -89,8 +86,11 @@ find_package(
+ find_package(pybind11 REQUIRED)
+ 
+ ##############################################################################
+-# Find LibQi
++# Find LibQi (local build in ../libqi/build/release)
+ ##############################################################################
++set(QI_LOCAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build/release")
++if(NOT qi_DIR AND EXISTS "${QI_LOCAL_DIR}/qi-config.cmake")
++  set(qi_DIR "${QI_LOCAL_DIR}")
++endif()
+ find_package(qi REQUIRED)
+ 
+ ##############################################################################
+@@ -290,6 +290,10 @@ install(
+   COMPONENT Module
+ )
+ 
++# Copy Python files to the build directory so the module is usable from there.
++foreach(file IN LISTS qi_python_py_files)
++  configure_file("${file}" "${file}" COPYONLY)
++endforeach()
++
+ ##############################################################################
+ # Tests
+ ##############################################################################
+-- 
+2.38.1.windows.1
+

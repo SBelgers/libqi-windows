@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Tue, 17 Feb 2026 14:29:09 +0100
+Subject: [PATCH 1/4] conanfile: Windows/MSVC compatibility
+
+- Fix uninitialized `revision` variable in `set_version`.
+- Bump Boost from ~1.78 to ~1.82 (1.78 is incompatible with VS 2022).
+- Comment out gtest test dependency (not needed, causes build issues).
+- Skip GNU C++ extensions requirement when building with MSVC.
+---
+ conanfile.py | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index 15de14e..09048e2 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -61,13 +61,13 @@ class QiConan(ConanFile):
+     description = "Middle-ware framework for NAOqi"
+ 
+     requires = [
+-        "boost/[~1.78]",
++        "boost/[~1.82]",
+         "openssl/[~3]",
+     ]
+ 
+-    test_requires = [
+-        "gtest/cci.20210126",
+-    ]
++    # test_requires = [
++    #     "gtest/cci.20210126",
++    # ]
+ 
+     exports = "project.json"
+     exports_sources = [
+@@ -115,6 +115,7 @@ class QiConan(ConanFile):
+             return
+ 
+         version = self.cfg["version"]
++        revision = None
+ 
+         # For development version, try adding a suffix with the revision SHA1.
+         if version.endswith('-dev'):
+@@ -180,6 +181,10 @@ class QiConan(ConanFile):
+             comp.libdirs = [libdir]
+ 
+     def validate(self):
++        # Skip GNU extension requirement on MSVC
++        if self.settings.compiler == "msvc":
++            return
++
+         # Require at least C++17
+         if self.settings.compiler.cppstd:
+             tools.build.check_min_cppstd(self, "17", gnu_extensions=True)
+-- 
+2.38.1.windows.1
+

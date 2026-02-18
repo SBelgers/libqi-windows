@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Tue, 17 Feb 2026 20:29:25 +0100
+Subject: [PATCH 3/4] CMakeLists: Windows/MSVC build support
+
+- Suppress MSVC warnings C4251/C4275 (DLL-interface warnings for STL types).
+- Define qi_EXPORTS on qi_objects so QI_API resolves to dllexport.
+  (CMake only auto-defines it on the SHARED target, not the OBJECT library.)
+- Add _WIN32_WINNT=0x0A00 (target Windows 10).
+- Suppress C++17 std::result_of deprecation warning.
+- Disable Boost auto-linking and enable Boost DLL linking (Conan manages
+  the link flags, auto-linking conflicts with it).
+---
+ CMakeLists.txt | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 679f27f..4a2a9b5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -91,7 +91,7 @@ endif()
+ if(IS_GCC_OR_CLANG)
+   add_compile_options(-Wall -Wextra)
+ elseif(MSVC)
+-  add_compile_options(/W3)
++  add_compile_options(/W3 /wd4251 /wd4275)
+ endif()
+ 
+ # Add QI_WITH_TESTS definitions to all targets in the build, to enable export
+@@ -620,6 +620,15 @@ target_link_libraries(
+     qi::ka
+ )
+ 
++# CMake auto-defines qi_EXPORTS only on the SHARED library target 'qi', but
++# compilation happens in the OBJECT library 'qi_objects'. We must propagate
++# the export macro so that QI_API resolves to dllexport when building the DLL.
++target_compile_definitions(
++  qi_objects
++  PRIVATE
++    qi_EXPORTS
++)
++
+ set_target_properties(
+   qi_objects
+   PROPERTIES
+@@ -656,6 +665,10 @@ if(WIN32)
+       _CRT_SECURE_NO_WARNINGS
+       WIN32_LEAN_AND_MEAN
+       NOMINMAX
++      _WIN32_WINNT=0x0A00
++      _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING
++      BOOST_ALL_NO_LIB
++      BOOST_ALL_DYN_LINK
+   )
+ endif()
+ 
+-- 
+2.38.1.windows.1
+

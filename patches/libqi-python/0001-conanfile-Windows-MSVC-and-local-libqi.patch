@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:23:56 +0100
+Subject: [PATCH 1/4] conanfile: Windows/MSVC and local libqi support
+
+- Change Boost version from ~1.83 to ~1.82 (matching libqi).
+- Add openssl/[~3] as an explicit requirement.
+- Comment out qi/[~4] Conan requirement (use a local build instead).
+- Move compiler.libcxx setting into configure() so it is only set for
+  non-MSVC compilers; MSVC does not support this option.
+---
+ conanfile.py | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index d2a74aa..a5f0baa 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -55,9 +55,10 @@ USED_BOOST_COMPONENTS = [
+ 
+ class QiPythonConan(ConanFile):
+     requires = [
+-        "boost/[~1.83]",
++        "boost/[~1.82]",
++        "openssl/[~3]",
+         "pybind11/[^2.11]",
+-        "qi/[~4]",
++        # "qi/[~4]",  # Use local libqi instead of Conan package
+     ]
+ 
+     test_requires = [
+@@ -73,9 +74,14 @@ class QiPythonConan(ConanFile):
+         "boost/*:shared": True,
+         "openssl/*:shared": True,
+         "qi/*:with_boost_locale": True,  # for `pytranslator.cpp`
++        # "compiler.libcxx" will be set in configure() for non-MSVC compilers
+     }
+ 
+     # Disable every components of Boost unless we actively use them.
++
++    def configure(self):
++        # Only set GNU-specific options if not using MSVC
++        if self.settings.get_safe("compiler") not in ["Visual Studio", "msvc"]:
++            self.options["compiler.libcxx"] = "libstdc++11"
+ 
+     def layout(self):
+         # Configure the format of the build folder name, based on the value of some variables.
+-- 
+2.38.1.windows.1
+

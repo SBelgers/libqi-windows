@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Tue, 17 Feb 2026 20:24:00 +0100
+Subject: [PATCH 2/4] Add missing <ostream> include to path.hpp
+
+MSVC requires the full <ostream> header rather than just <iosfwd>
+for the stream insertion operator used in this header.
+---
+ qi/path.hpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/qi/path.hpp b/qi/path.hpp
+index 967b5a2..5d615e8 100644
+--- a/qi/path.hpp
++++ b/qi/path.hpp
+@@ -14,6 +14,7 @@
+ # include <locale>
+ # include <iosfwd>
+ # include <qi/api.hpp>
++# include <ostream>
+ 
+ namespace boost { namespace filesystem {
+   class path;
+-- 
+2.38.1.windows.1
+
