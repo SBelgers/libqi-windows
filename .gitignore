@@ -1,0 +1,37 @@
+# Cloned upstream repos (not committed — cloned at build time)
+libqi/
+libqi-python/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# DLLs and binaries (shipped in wheel, not in repo)
+*.dll
+*.pyd
+*.exe
+*.lib
+*.exp
+*.obj
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Conan
+.conan2/
+
+# IDE / Editor
+.vs/
+.vscode/
+*.suo
+*.user
+*.swp
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
