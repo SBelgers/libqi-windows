@@ -165,6 +165,11 @@ if exist "build" (
 
 conan install . -s build_type=Release --build=missing || exit /b 1
 cmake --preset conan-release || exit /b 1
+:: Ensure CMake uses the venv's Python executable when configuring the project.
+:: Re-run a configure step that sets the Python3 executable cache variable so
+:: the generated extension matches the target Python version.
+:: Prefer the generic FindPython cache variables used by "find_package(Python ...)".
+cmake -S . -B build/release -DPython_EXECUTABLE="%PYTHON_VENV%\Scripts\python.exe" -DPython_ROOT_DIR="%PYTHON_VENV%" || exit /b 1
 cmake --build --preset conan-release || exit /b 1
 popd
 
