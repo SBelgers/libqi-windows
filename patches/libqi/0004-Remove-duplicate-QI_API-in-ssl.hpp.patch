@@ -1,12 +1,8 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 9d3914740e9a671b7a53cdf8c1e72183410592df Mon Sep 17 00:00:00 2001
 From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
 Date: Tue, 17 Feb 2026 20:41:01 +0100
-Subject: [PATCH 4/4] Remove duplicate QI_API on static inline methods in
- ssl.hpp
+Subject: [PATCH 4/4] Remove duplicate QI_API in ssl.hpp.
 
-These methods are `static inline` defined in the header. The enclosing
-class is already marked QI_API, so the extra QI_API on each method
-causes MSVC warnings about inconsistent DLL linkage.
 ---
  qi/messaging/ssl/ssl.hpp | 5 -----
  1 file changed, 5 deletions(-)

@@ -1,0 +1,25 @@
+From 278383b8f012d532a8ac5311782f7641e369b176 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Wed, 18 Feb 2026 10:27:32 +0100
+Subject: [PATCH 2/4] Another attempt at circumventing.
+
+---
+ conanfile.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index 0deed40..767b97f 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -74,7 +74,7 @@ class QiPythonConan(ConanFile):
+         "boost/*:shared": True,
+         "openssl/*:shared": True,
+         "qi/*:with_boost_locale": True,  # for `pytranslator.cpp`
+-        "compiler.libcxx": "libstdc++11",
++        # "compiler.libcxx" will be set in configure() for non-MSVC compilers
+     }
+ 
+     # Disable every components of Boost unless we actively use them.
+-- 
+2.38.1.windows.1
+

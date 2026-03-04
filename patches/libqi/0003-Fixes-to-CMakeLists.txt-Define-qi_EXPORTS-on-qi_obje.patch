@@ -1,0 +1,63 @@
+From 0cf8c6215d214dca518087172d789a94e94d54ee Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Tue, 17 Feb 2026 20:29:25 +0100
+Subject: [PATCH 3/4] Fixes to CMakeLists.txt - Define qi_EXPORTS on qi_objects
+ so QI_API resolves to dllexport. - Target Windows 10 API's. - Suppress C++17
+ std::result_of deprecation warning. - Disable Boost auto-linking and enable
+ dynamic DLL linking
+
+---
+ CMakeLists.txt | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 679f27f..724eb60 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -91,7 +91,7 @@ endif()
+ if(IS_GCC_OR_CLANG)
+   add_compile_options(-Wall -Wextra)
+ elseif(MSVC)
+-  add_compile_options(/W3)
++  add_compile_options(/W3 /wd4251 /wd4275)
+ endif()
+ 
+ # Add QI_WITH_TESTS definitions to all targets in the build, to enable export
+@@ -620,6 +620,13 @@ target_link_libraries(
+     qi::ka
+ )
+ 
++# Fix an issue with chosing dllexport instead of dllimport in compiling QI_API.
++target_compile_definitions(
++  qi_objects
++  PRIVATE
++    qi_EXPORTS
++)
++
+ set_target_properties(
+   qi_objects
+   PROPERTIES
+@@ -648,7 +655,8 @@ if(WIN32)
+       src/os_win32.hpp
+       src/os_debugger_win32.cpp
+   )
+-
++  # Target windows 10 API's, Silence a deprecation warnings
++  # Disable boost autolinking, and use dynamic links
+   target_compile_definitions(
+     qi_objects
+     PUBLIC
+@@ -656,6 +664,10 @@ if(WIN32)
+       _CRT_SECURE_NO_WARNINGS
+       WIN32_LEAN_AND_MEAN
+       NOMINMAX
++      _WIN32_WINNT=0x0A00
++      _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING
++      BOOST_ALL_NO_LIB
++      BOOST_ALL_DYN_LINK
+   )
+ endif()
+ 
+-- 
+2.38.1.windows.1
+

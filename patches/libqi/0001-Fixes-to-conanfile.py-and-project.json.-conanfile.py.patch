@@ -1,0 +1,81 @@
+From 8bc6c65a1f3208166d105d80996ef3f6d0a90023 Mon Sep 17 00:00:00 2001
+From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
+Date: Tue, 17 Feb 2026 14:29:09 +0100
+Subject: [PATCH 1/4] Fixes to conanfile.py and project.json. conanfile.py -
+ Fix uninitialized `revision` variable in `set_version`. Now pulls the
+ revision from project.json. - Bump Boost from ~1.78 to ~1.82 - Comment out
+ gtest test dependency - Skip GNU C++ extensions project.json - Set a
+ revision.
+
+---
+ conanfile.py | 20 +++++++++++++++-----
+ project.json |  1 +
+ 2 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/conanfile.py b/conanfile.py
+index 15de14e..60e240c 100644
+--- a/conanfile.py
++++ b/conanfile.py
+@@ -1,5 +1,6 @@
+ import os
+ import json
++import datetime
+ from conan import ConanFile, tools
+ from conan.tools.cmake import CMake, cmake_layout
+ 
+@@ -61,13 +62,14 @@ class QiConan(ConanFile):
+     description = "Middle-ware framework for NAOqi"
+ 
+     requires = [
+-        "boost/[~1.78]",
++        "boost/[~1.82]",
+         "openssl/[~3]",
+     ]
+-
+-    test_requires = [
+-        "gtest/cci.20210126",
+-    ]
++    
++    # Tests are removed; we focus on getting the main library working.
++    # test_requires = [
++    #     "gtest/cci.20210126",
++    # ]
+ 
+     exports = "project.json"
+     exports_sources = [
+@@ -115,6 +117,10 @@ class QiConan(ConanFile):
+             return
+ 
+         version = self.cfg["version"]
++        # The original code expects a value for revision to exist.
++        # Ideally, a revision system should be implemented.
++        # For now, we just get it from project.json
++        revision = self.cfg.get("revision", None)
+ 
+         # For development version, try adding a suffix with the revision SHA1.
+         if version.endswith('-dev'):
+@@ -179,6 +185,10 @@ class QiConan(ConanFile):
+             comp.libdirs = [libdir]
+ 
+     def validate(self):
++        # Skip GNU extension requirement on MSVC
++        if self.settings.compiler == "msvc":
++            return
++
+         # Require at least C++17
+         if self.settings.compiler.cppstd:
+             tools.build.check_min_cppstd(self, "17", gnu_extensions=True)
+diff --git a/project.json b/project.json
+index 78c9c18..a849919 100644
+--- a/project.json
++++ b/project.json
+@@ -1,5 +1,6 @@
+ {
+   "version": "4.0.1",
++  "revision": "0",
+   "maintainers": {
+       "Vincent Palancher": "vincent.palancher@aldebaran.com",
+       "Jeremy Monnon": "jmonnon@aldebaran.com"
+-- 
+2.38.1.windows.1
+

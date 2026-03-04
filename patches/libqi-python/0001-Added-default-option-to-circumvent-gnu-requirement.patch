@@ -1,17 +1,30 @@
-From 25568b83ea1f8155835555a5516f4d26935d81bc Mon Sep 17 00:00:00 2001
+From 769b746ed51926967888a655012e6b1de789eeea Mon Sep 17 00:00:00 2001
 From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
 Date: Wed, 18 Feb 2026 10:23:56 +0100
-Subject: [PATCH 1/7] Added default option to circumvent gnu requirement
+Subject: [PATCH 1/4] Added default option to circumvent gnu requirement
 
 ---
- conanfile.py | 1 +
- 1 file changed, 1 insertion(+)
+ conanfile.py | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/conanfile.py b/conanfile.py
-index d2a74aa..fe8d6d1 100644
+index d2a74aa..0deed40 100644
 --- a/conanfile.py
 +++ b/conanfile.py
-@@ -73,6 +73,7 @@ class QiPythonConan(ConanFile):
+@@ -55,9 +55,10 @@ USED_BOOST_COMPONENTS = [
+ 
+ class QiPythonConan(ConanFile):
+     requires = [
+-        "boost/[~1.83]",
++        "boost/[~1.82]",
+         "pybind11/[^2.11]",
+-        "qi/[~4]",
++        "openssl/[~3]",
++        # "qi/[~4]",
+     ]
+ 
+     test_requires = [
+@@ -73,6 +74,7 @@ class QiPythonConan(ConanFile):
          "boost/*:shared": True,
          "openssl/*:shared": True,
          "qi/*:with_boost_locale": True,  # for `pytranslator.cpp`
@@ -19,6 +32,18 @@ index d2a74aa..fe8d6d1 100644
      }
  
      # Disable every components of Boost unless we actively use them.
+@@ -84,6 +86,11 @@ class QiPythonConan(ConanFile):
+             for _name in BOOST_COMPONENTS
+         }
+     )
++    
++    def configure(self):
++        # Only set GNU-specific options if not using MSVC
++        if self.settings.get_safe("compiler") not in ["Visual Studio", "msvc"]:
++            self.options["compiler.libcxx"] = "libstdc++11"
+ 
+     def layout(self):
+         # Configure the format of the build folder name, based on the value of some variables.
 -- 
 2.38.1.windows.1
 

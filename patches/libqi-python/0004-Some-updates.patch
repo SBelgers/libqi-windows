@@ -1,88 +1,21 @@
-From 7e4477634a713694a5009e4d0db65545e10b7a1a Mon Sep 17 00:00:00 2001
+From acc0c9be673c082218cd12417ca4bf3c70a51b5f Mon Sep 17 00:00:00 2001
 From: Simon Belgers <123083599+SBelgers@users.noreply.github.com>
 Date: Wed, 18 Feb 2026 11:24:21 +0100
-Subject: [PATCH 6/7] Some updates
+Subject: [PATCH 4/4] Some updates
 
 ---
- CMakeLists.txt      |  20 ++++----
- conanfile.py        |   1 +
- install_local.py    | 111 ++++++++++++++++++++++++++++++++++++++++++++
+ install_local.py    | 128 ++++++++++++++++++++++++++++++++++++++++++++
  qipython/common.hpp |   7 ++-
  src/pytypes.cpp     |   2 +-
- 5 files changed, 129 insertions(+), 12 deletions(-)
+ 3 files changed, 134 insertions(+), 3 deletions(-)
  create mode 100644 install_local.py
 
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e2aa7d6..55920cc 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -78,10 +78,7 @@ find_package(
- ##############################################################################
- # Find Boost
- ##############################################################################
--find_package(
--  Boost REQUIRED
--  COMPONENTS thread
--)
-+## Boost is provided by Conan; do not use find_package(Boost ...) with CMake >= 4.2
- 
- ##############################################################################
- # Find Pybind11
-@@ -89,11 +86,11 @@ find_package(
- find_package(pybind11 REQUIRED)
- 
- ##############################################################################
--# Find LibQi (local build in ../libqi/build)
-+# Find LibQi (local build in ../libqi/build/release)
- ##############################################################################
--set(QI_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build")
--if(EXISTS "${QI_LOCAL_PATH}/cmake/qimodule-config.cmake")
--  list(PREPEND CMAKE_PREFIX_PATH "${QI_LOCAL_PATH}")
-+set(QI_LOCAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libqi/build/release")
-+if(NOT qi_DIR AND EXISTS "${QI_LOCAL_DIR}/qi-config.cmake")
-+  set(qi_DIR "${QI_LOCAL_DIR}")
- endif()
- find_package(qi REQUIRED)
- 
-@@ -102,7 +99,7 @@ find_package(qi REQUIRED)
- ##############################################################################
- add_library(cxx_standard INTERFACE)
- 
--# The project requires at least C++17.
-+# The project requires at least C++17.s
- target_compile_features(
-   cxx_standard
-   INTERFACE
-@@ -290,6 +287,11 @@ install(
-   COMPONENT Module
- )
- 
-+# Copy Python files to the build directory so the module is usable from there.
-+foreach(file IN LISTS qi_python_py_files)
-+  configure_file("${file}" "${file}" COPYONLY)
-+endforeach()
-+
- ##############################################################################
- # Tests
- ##############################################################################
-diff --git a/conanfile.py b/conanfile.py
-index 5841722..8fb901c 100644
---- a/conanfile.py
-+++ b/conanfile.py
-@@ -56,6 +56,7 @@ USED_BOOST_COMPONENTS = [
- class QiPythonConan(ConanFile):
-     requires = [
-         "boost/[~1.83]",
-+        "openssl/[~3]",
-         "pybind11/[^2.11]",
-         # "qi/[~4]",  # Use local libqi instead of Conan package
-     ]
 diff --git a/install_local.py b/install_local.py
 new file mode 100644
-index 0000000..eec2202
+index 0000000..0147d8d
 --- /dev/null
 +++ b/install_local.py
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,128 @@
 +"""
 +Script to install the pre-built qi package into the active Python environment
 +for local development and testing.
@@ -123,7 +56,21 @@ index 0000000..eec2202
 +    build_dir = os.path.join(project_dir, "build", "release")
 +    qi_source_dir = os.path.join(project_dir, "qi")
 +    qi_build_dir = os.path.join(build_dir, "qi")
++
++    # Handle double-nested build directory (cmake preset quirk)
++    qi_build_dir_nested = os.path.join(build_dir, "build", "release", "qi")
++    if not os.path.exists(
++        os.path.join(qi_build_dir, "qi_python.pyd")
++    ) and os.path.exists(os.path.join(qi_build_dir_nested, "qi_python.pyd")):
++        qi_build_dir = qi_build_dir_nested
++        print(f"  Using nested build dir: {qi_build_dir}")
++
++    # Find generators dir (may also be nested)
 +    toolchain_file = os.path.join(build_dir, "generators", "conan_toolchain.cmake")
++    if not os.path.isfile(toolchain_file):
++        toolchain_file = os.path.join(
++            build_dir, "build", "release", "generators", "conan_toolchain.cmake"
++        )
 +
 +    site_packages = sysconfig.get_path("purelib")
 +    qi_install_dir = os.path.join(site_packages, "qi")
@@ -168,8 +115,11 @@ index 0000000..eec2202
 +
 +    # libqi-python build output
 +    local_sdk_bin = os.path.join(build_dir, "sdk", "bin")
++    local_sdk_bin_nested = os.path.join(build_dir, "build", "release", "sdk", "bin")
 +    if os.path.isdir(local_sdk_bin):
 +        dll_dirs.append(local_sdk_bin)
++    if os.path.isdir(local_sdk_bin_nested):
++        dll_dirs.append(local_sdk_bin_nested)
 +
 +    # Conan runtime lib dirs (Boost, OpenSSL, etc.)
 +    if os.path.isfile(toolchain_file):
