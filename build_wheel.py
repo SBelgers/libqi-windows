@@ -1,7 +1,7 @@
 """
 Build a pip-installable wheel from the already-installed qi package.
 
-Usage (after a successful build_all.ps1 run):
+Usage (after a successful build_all.cmd run):
     python build_wheel.py
 
 The wheel is written to dist/ and can be installed with:
@@ -24,12 +24,12 @@ from pathlib import Path
 # ── Configuration ─────────────────────────────────────────────────────────
 
 PACKAGE_NAME = "libqi_windows"        # pip install libqi-windows
-VERSION      = "4.0.1"               # matches libqi upstream
+VERSION      = "3.1.5"               # matches libqi-python upstream
 DESCRIPTION  = "Aldebaran NAOqi (libqi) Python bindings for Windows"
 AUTHOR       = "Aldebaran / libqi-windows contributors"
 LICENSE      = "BSD-3-Clause"
 URL          = "https://github.com/SBelgers/libqi-windows"
-REQUIRES_PYTHON = ">=3.11"
+REQUIRES_PYTHON = ">=3.11,<=3.14"
 
 # ── Locate the installed qi package ───────────────────────────────────────
 
