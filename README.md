@@ -87,7 +87,7 @@ os=Windows
    pip install conan ninja
    ```
 
-3. **Run the build script** from a *Developer Command Prompt for VS 2022*:
+3. **Run the build script** from an *x64 VS developer shell*:
 
    ```
    build_all.cmd -pythonversion 3.14 -buildwheel
